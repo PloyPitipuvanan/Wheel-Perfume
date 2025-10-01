@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emotion By Scent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      font-family: 'Montserrat', sans-serif;
+      text-align: center;
+      padding-top: 20px;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 90vmin;
+      height: 90vmin;
+      max-width: 700px;
+      max-height: 700px;
+      margin: auto;
+      touch-action: none;
+    }
+
+    .wheel, .wheel-center {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .wheel {
+      border-radius: 50%;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: auto; /* แก้ตรงนี้เพื่อให้หมุนได้ */
+    }
+
+    .wheel-center {
+      pointer-events: none; /* ล็อกไม่ให้เซฟรูป */
+    }
+
+    h2 {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;" ondragstart="return false;">
+
+<h2>Your Life, Your Story</h2>
+
+<div class="wheel-container">
+  <img src="wheel.svg" class="wheel" id="wheel" />
+  <img src="center.svg" class="wheel-center" />
+</div>
+
+<script>
+const wheel = document.getElementById('wheel');
+let isDragging = false;
+let startAngle = 0;
+let currentRotation = 0;
+let lastAngle = 0;
+let lastTimestamp = 0;
+let velocity = 0;
+let inertiaInterval;
+
+function getAngle(e, rect) {
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left - rect.width / 2;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top - rect.height / 2;
+  return Math.atan2(y, x) * (180 / Math.PI);
+}
+
+function applyRotation(angle) {
+  wheel.style.transform = `rotate(${angle}deg)`;
+}
+
+function startDrag(e) {
+  clearInterval(inertiaInterval);
+  isDragging = true;
+  const rect = wheel.getBoundingClientRect();
+  startAngle = getAngle(e, rect) - currentRotation;
+  lastAngle = currentRotation;
+  lastTimestamp = performance.now();
+
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchmove', drag);
+  document.addEventListener('touchend', stopDrag);
+}
+
+function drag(e) {
+  if (!isDragging) return;
+  const rect = wheel.getBoundingClientRect();
+  const angle = getAngle(e, rect);
+  const now = performance.now();
+  const deltaAngle = angle - startAngle;
+  velocity = (deltaAngle - lastAngle) / ((now - lastTimestamp) / 1000);
+  lastAngle = deltaAngle;
+  lastTimestamp = now;
+  currentRotation = deltaAngle;
+  applyRotation(currentRotation);
+}
+
+function stopDrag() {
+  isDragging = false;
+  document.removeEventListener('mousemove', drag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', drag);
+  document.removeEventListener('touchend', stopDrag);
+
+  const friction = 0.98;
+  inertiaInterval = setInterval(() => {
+    velocity *= friction;
+    currentRotation += velocity * 0.016;
+    applyRotation(currentRotation);
+    if (Math.abs(velocity) < 0.05) clearInterval(inertiaInterval);
+  }, 16);
+}
+
+wheel.addEventListener('mousedown', startDrag);
+wheel.addEventListener('touchstart', startDrag);
+</script>
+
+</body>
+</html>
